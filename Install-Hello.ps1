@@ -136,11 +136,11 @@ function Get-HelloOSDetails {
             }
         }
         MacOS {
-            if ($OSVersion.Build -lt 16) {
-                $OSName = "OSX"
+            $OSName = if ($OSVersion.Build -lt 16) {
+                "OSX"
             }
             elseif ($OSVersion.Build -le 16) {
-                $OSName = "macOS"
+                "macOS"
             }
 
             $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor)"
@@ -150,15 +150,15 @@ function Get-HelloOSDetails {
                 Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
             }
 
-            if ($WindowsCurrentVersion.ProductName) {
-                $OSName = $WindowsCurrentVersion.ProductName.
+            $OSName = if ($WindowsCurrentVersion.ProductName) {
+                $WindowsCurrentVersion.ProductName.
                 Replace("Microsoft Windows", "Windows")
             }
             else {
-                $OSName = "Windows"
+                "Windows"
             }
 
-            if ($WindowsCurrentVersion.CSDVersion) {
+            $OSRelease = if ($WindowsCurrentVersion.CSDVersion) {
                 $WindowsCurrentVersion.CSDVersion
             }
             elseif ($WindowsCurrentVersion.ReleaseId) {
@@ -181,9 +181,6 @@ function Get-HelloOSDetails {
             }
         }
     }
-
-    $OSName = Get-OSName
-    $OSRelease = Get-OSRelease
 
     $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
     $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
