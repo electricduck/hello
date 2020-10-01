@@ -26,7 +26,7 @@
 Set-Alias -Name clear -Value Restart-Shell -Option AllScope
 
 enum PSCompat {
-    UnknownEdition
+    UnknownCompat
     Core
     Legacy
 }
@@ -43,7 +43,7 @@ $HostEncoding = ([Console]::OutputEncoding).CodePage
 $Hostname = ([net.dns]::GetHostName())
 $HostUsername = ([System.Environment]::UserName)
 [OS]$OS = [OS]::UnknownOS
-[PSCompat]$PSCompat = [PSCompat]::UnknownEdition
+[PSCompat]$PSCompat = [PSCompat]::UnknownCompat
 $PSVersion = $PSVersionTable.PSVersion
 
 if ($PSVersion.Major -lt 6) {
