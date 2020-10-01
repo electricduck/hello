@@ -448,7 +448,7 @@ function Update-Hello {
     $ModifiedBytes = $ModifiedFile.Length
     $SavedBytes = $OriginalBytes - $ModifiedBytes
     $SavedBytesPercentage = (($ModifiedBytes - $OriginalBytes) / $OriginalBytes) * -1 * 100
-    Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Saved $SavedBytes bytes ($([Math]::Round($SavedBytesPercentage, 2))% smaller)")
+    Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)")
 
     $NewVersion = (Select-String -Path $InstallLocation -Pattern '^\$HelloVersion\s=\s"(\d+\.\d+)"$').Matches.Groups[1].Value
     Write-StatusMessage "Hello $NewVersion installed!" @("Keep Hello updated by running Update-Hello", "Bug reports can be filed to https://github.com/electricduck/hello/issues", "", "To begin, restart your shell") -Icon "✔️" -MessageColor Green -DebugMessagesColor White
