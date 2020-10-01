@@ -183,6 +183,15 @@ function Get-HelloOSDetails {
                 elseif ($OSVersion.Build -ge 9841) {
                     "Build $($OSVersion.Build)"
                 }
+                elseif (
+                    # TODO: Better way of picking up official builds that don't have a ReleaseId/CSDVersion
+                    $OSVersion.Build -eq 7600 -or # 7 / 2008 R2
+                    $OSVersion.Build -eq 9200 -or # 8 / 2012
+                    $OSVersion.Build -eq 9200 -or # 8.1 / 2012 R2
+                    $OSVersion.Build -eq 10240    # 10 1507
+                ) {
+                    ""
+                }
                 else {
                     "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
                 }
@@ -455,8 +464,7 @@ function Update-Hello {
     Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)")
     
     $NewVersion = (Select-String -Path $InstallLocation -Pattern '^\$HelloVersion\s=\s"(\d+\.\d+)"$').Matches.Groups[1].Value
-    if($DevBranch)
-    {
+    if ($DevBranch) {
         $NewVersion = "$NewVersion-dev"
     }
 
