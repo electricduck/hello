@@ -441,6 +441,7 @@ function Update-Hello {
     }
     
     $ModifiedFile = $ModifiedFile | Where-Object { $_.trim() -ne "" } # Remove blank lines
+    $ModifiedFile = $ModifiedFile.Trim() # Trim excess spaces
     #$ModifiedFile = $ModifiedFile | Where-Object { -not ([String]::IsNullOrEmpty($_.Trim()) -or $_-match"^\s*# ") } | ForEach-Object { $_ -replace "(.*)(# .*)",'$1' } # Remove comments
 
     Set-Content -Value $ModifiedFile -Path $InstallLocation
