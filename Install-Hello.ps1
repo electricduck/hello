@@ -3,7 +3,7 @@
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.4 =
+# ======================= 20.5 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
@@ -38,7 +38,7 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.4"
+$HelloVersion = "20.5"
 $HostEncoding = ([Console]::OutputEncoding).CodePage
 $Hostname = ([net.dns]::GetHostName())
 $HostUsername = ([System.Environment]::UserName)
