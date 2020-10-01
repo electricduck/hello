@@ -364,7 +364,8 @@ function Write-Hello {
 function Update-Hello {
     Param(
         [bool]$Online = $true,
-        [string]$Path = ""
+        [string]$Path = "",
+        [bool]$DevBranch = $false
     )
 
     function Write-StatusMessage {
@@ -411,11 +412,13 @@ function Update-Hello {
     $InstallLocation = "$(((Get-Item $PROFILE).Directory).FullName)/hello.ps1".Replace("\", "/")
     $InstallSource = $Path
     $OnlineInstallLocation = ($InstallLocation + "_tmp")
-    $OnlineInstallUrl = "https://raw.githubusercontent.com/electricduck/hello/release/Install-Hello.ps1"
+    $OnlineInstallUrl = "https://raw.githubusercontent.com/electricduck/hello/" + (@( { release }, { develop })[$DevBranch]).ToString().Trim() + "/Install-Hello.ps1"
     $IsInstalled = (Test-Path $InstallLocation)
     $NewVersion = $HelloVersion
     $DotSource = ". $InstallLocation"
     $InstallMessagePrefix = (@( { Installing }, { Updating })[$IsInstalled]).ToString().Trim()
+
+    Write-Output $OnlineInstallUrl
 
     if ($Online) {
         $InstallSource = $OnlineInstallLocation
@@ -450,8 +453,13 @@ function Update-Hello {
     $SavedBytes = $OriginalBytes - $ModifiedBytes
     $SavedBytesPercentage = (($ModifiedBytes - $OriginalBytes) / $OriginalBytes) * -1 * 100
     Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)")
-
+    
     $NewVersion = (Select-String -Path $InstallLocation -Pattern '^\$HelloVersion\s=\s"(\d+\.\d+)"$').Matches.Groups[1].Value
+    if($DevBranch)
+    {
+        $NewVersion = "$NewVersion-dev"
+    }
+
     Write-StatusMessage "Hello $NewVersion installed!" @("Keep Hello updated by running Update-Hello", "Bug reports can be filed to https://github.com/electricduck/hello/issues", "", "To begin, restart your shell") -Icon "✔️" -MessageColor Green -DebugMessagesColor White
 }
 
