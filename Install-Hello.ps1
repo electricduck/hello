@@ -3,7 +3,7 @@
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.4 =
+# ======================= 20.5 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
@@ -26,7 +26,7 @@
 Set-Alias -Name clear -Value Restart-Shell -Option AllScope
 
 enum PSCompat {
-    UnknownEdition
+    UnknownCompat
     Core
     Legacy
 }
@@ -38,12 +38,12 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.4"
+$HelloVersion = "20.5"
 $HostEncoding = ([Console]::OutputEncoding).CodePage
 $Hostname = ([net.dns]::GetHostName())
 $HostUsername = ([System.Environment]::UserName)
 [OS]$OS = [OS]::UnknownOS
-[PSCompat]$PSCompat = [PSCompat]::UnknownEdition
+[PSCompat]$PSCompat = [PSCompat]::UnknownCompat
 $PSVersion = $PSVersionTable.PSVersion
 
 if ($PSVersion.Major -lt 6) {
@@ -115,83 +115,72 @@ function Get-HelloOSDetails {
     $OSRelease = ""
     $OSVersion = [Environment]::OSVersion.Version
 
-    $LinuxOSRelease = $null
-    $WindowsCurrentVersion = $null
-
-    if ($OS -eq [OS]::Linux) {
-        if (Test-Path /etc/os-release) {
-            $LinuxOSRelease = (Get-Content /etc/os-release)
-        }
-    }
-
-    if ($OS -eq [OS]::Windows) {
-        $WindowsCurrentVersion = Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-    }
-
-    function Get-OSName {
-        switch ($OS) {
-            Linux {
-                if ($LinuxOSRelease) {
-                    (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
-                    Replace("elementary OS", "elementaryOS").
-                    Replace("Debian GNU/Linux", "Debian")
-                }
-                else {
-                    "Linux"
+    switch ($OS) {
+        Linux {
+            $LinuxOSRelease = if ($OS -eq [OS]::Linux) {
+                if (Test-Path /etc/os-release) {
+                    (Get-Content /etc/os-release)
                 }
             }
-            MacOS {
-                if ($OSVersion.Build -lt 16) {
-                    "OSX"
-                }
-                elseif ($OSVersion.Build -le 16) {
-                    "macOS"
-                }
+
+            if ($LinuxOSRelease) {
+                $OSName = (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
+                Replace("elementary OS", "elementaryOS").
+                Replace("Debian GNU/Linux", "Debian")
+
+                $OSRelease = ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
             }
-            Windows {
-                if ($WindowsCurrentVersion.ProductName) {
-                    $WindowsCurrentVersion.ProductName.
-                    Replace("Microsoft Windows", "Windows")
-                }
-                else {
-                    "Windows"
-                }
+            else {
+                $OSName = "Linux"
+                $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
             }
         }
-    }
+        MacOS {
+            $OSName = if ($OSVersion.Build -lt 16) {
+                "OSX"
+            }
+            elseif ($OSVersion.Build -le 16) {
+                "macOS"
+            }
 
-    function Get-OSRelease {
-        switch ($OS) {
-            Linux {
-                if ($LinuxOSRelease) {
-                    ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
-                }
-                else {
-                    "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
-                }
+            $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor)"
+        }
+        Windows {
+            $WindowsCurrentVersion = if ($OS -eq [OS]::Windows) {
+                Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
             }
-            MacOS {
-                "$($OSVersion.Major).$($OSVersion.Minor)"
+
+            $OSName = if ($WindowsCurrentVersion.ProductName) {
+                $WindowsCurrentVersion.ProductName.
+                Replace("Microsoft Windows", "Windows")
             }
-            Windows {
-                if ($WindowsCurrentVersion.CSDVersion) {
-                    $WindowsCurrentVersion.CSDVersion
-                }
-                elseif ($WindowsCurrentVersion.ReleaseId) {
-                    $WindowsCurrentVersion.ReleaseId
-                }
-                elseif ($OSVersion.Build -ge 9841) {
-                    "Build $($OSVersion.Build)"
-                }
-                else {
-                    "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
-                }
+            else {
+                "Windows"
+            }
+
+            $OSRelease = if ($WindowsCurrentVersion.CSDVersion) {
+                $WindowsCurrentVersion.CSDVersion
+            }
+            elseif ($WindowsCurrentVersion.ReleaseId) {
+                $WindowsCurrentVersion.ReleaseId
+            }
+            elseif ($OSVersion.Build -ge 9841) {
+                "Build $($OSVersion.Build)"
+            }
+            elseif (
+                # TODO: Better way of picking up official builds that don't have a ReleaseId/CSDVersion
+                $OSVersion.Build -eq 7600 -or # 7 / 2008 R2
+                $OSVersion.Build -eq 9200 -or # 8 / 2012
+                $OSVersion.Build -eq 9600 -or # 8.1 / 2012 R2
+                $OSVersion.Build -eq 10240    # 10 1507
+            ) {
+                ""
+            }
+            else {
+                "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
             }
         }
     }
-
-    $OSName = Get-OSName
-    $OSRelease = Get-OSRelease
 
     $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
     $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
@@ -455,8 +444,7 @@ function Update-Hello {
     Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)")
     
     $NewVersion = (Select-String -Path $InstallLocation -Pattern '^\$HelloVersion\s=\s"(\d+\.\d+)"$').Matches.Groups[1].Value
-    if($DevBranch)
-    {
+    if ($DevBranch) {
         $NewVersion = "$NewVersion-dev"
     }
 
