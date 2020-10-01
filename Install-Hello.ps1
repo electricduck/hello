@@ -36,7 +36,6 @@ enum OS {
     Linux
     MacOS
     Windows
-    WindowsServer
 }
 
 $HelloVersion = "20.3"
@@ -55,21 +54,7 @@ else {
     $PSCompat = [PSCompat]::Core
 
     if ($IsWindows) {
-        $WindowsProductType = 1
-
-        if ($PSCompat -eq [PSCompat]::Legacy) {
-            $WindowsProductType = (Get-WmiObject -Class Win32_OperatingSystem).ProductType
-        }
-        else {
-            $WindowsProductType = (Get-CimInstance -Class Win32_OperatingSystem).ProductType
-        }
-
-        if ($WindowsProductType -eq 3) {
-            $OS = [OS]::WindowsServer
-        }
-        else {
-            $OS = [OS]::Windows
-        }
+        $OS = [OS]::Windows
     }
     elseif ($IsMacOS) {
         $OS = [OS]::MacOS
@@ -123,14 +108,15 @@ function Get-HelloLogoPart {
     }
 }
 
-function Get-HelloOSRelease {
-    $HelloOSReleaseReturn = New-Object -TypeName PSObject
+function Get-HelloOSDetails {
+    $HelloOSDetailsReturn = New-Object -TypeName PSObject
 
     $OSName = ""
     $OSRelease = ""
     $OSVersion = [Environment]::OSVersion.Version
-    $OSVersionBuild = $OSVersion.Build
+
     $LinuxOSRelease = $null
+    $WindowsCurrentVersion = $null
 
     if ($OS -eq [OS]::Linux) {
         if (Test-Path /etc/os-release) {
@@ -138,48 +124,15 @@ function Get-HelloOSRelease {
         }
     }
 
+    if ($OS -eq [OS]::Windows) {
+        $WindowsCurrentVersion = Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+    }
+
     function Get-OSName {
         switch ($OS) {
-            Windows {
-                switch ($OSVersionBuild) {
-                    7600 { "Windows 7" }
-                    7601 { "Windows 7 SP1" }
-                    9200 { "Windows 8" }
-                    9600 { "Windows 8.1" }
-                    default {
-                        if ($OSVersionBuild -ge 9841) {
-                            "Windows 10"
-                        }
-                        else {
-                            "Windows"
-                        }
-                    }
-                }
-            }
-            WindowsServer {   
-                switch ($OSVersionBuild) {
-                    7600 { "Windows Server 2008 R2" }
-                    7601 { "Windows Server 2008 R2 SP1" }
-                    9200 { "Windows Server 2012" }
-                    9600 { "Windows Server 2012 R2" }
-                    14393 { "Windows Server 2016" }
-                    17763 { "Windows Server 2019" }
-                    default {
-                        "Windows Server"
-                    }
-                }
-            }
-            MacOS {
-                if ($OSVersionBuild -lt 16) {
-                    "OSX"
-                }
-                elseif ($OSVersionBuild -le 16) {
-                    "macOS"
-                }
-            }
             Linux {
                 if ($LinuxOSRelease) {
-                    ($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "").
+                    (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
                     Replace("elementary OS", "elementaryOS").
                     Replace("Debian GNU/Linux", "Debian")
                 }
@@ -187,80 +140,64 @@ function Get-HelloOSRelease {
                     "Linux"
                 }
             }
+            MacOS {
+                if ($OSVersion.Build -lt 16) {
+                    "OSX"
+                }
+                elseif ($OSVersion.Build -le 16) {
+                    "macOS"
+                }
+            }
+            Windows {
+                if ($WindowsCurrentVersion.ProductName) {
+                    $WindowsCurrentVersion.ProductName.
+                    Replace("Microsoft Windows", "Windows")
+                }
+                else {
+                    "Windows"
+                }
+            }
         }
     }
 
-    function Get-OSVersionRelease {
+    function Get-OSRelease {
         switch ($OS) {
-            Windows {
-                switch ($OSVersionBuild) {
-                    { @(7600, 9200, 9600) -contains $_ } { " " } # TODO: Better way of doing this
-                    7601 { "SP1" }
-                    10586 { "1511 (November)" }
-                    14393 { "1607 (Anniversary)" }
-                    15063 { "1703 (Creators)" }
-                    16299 { "1709 (Fall Creators)" }
-                    17134 { "1803 (April 2018)" }
-                    17763 { "1809 (October 2018)" }
-                    18362 { "1903 (May 2019)" }
-                    18363 { "1909 (November 2019)" }
-                    19041 { "2004 (May 2020)" }
-                    19042 { "2009 (October 2020)" }
-                    default {
-                        if ($OSVersionBuild -ge 9841) {
-                            "Build $($OSVersion.Build.ToString())"
-                        }
-                    }
-                }
-            }
-            WindowsServer {
-                switch ($OSVersionBuild) {
-                    { @(7600, 9200, 9600, 14393, 17763) -contains $_ } { " " } # TODO: Better way of doing this
-                    7601 { "SP1" }
-                    16299 { "1709" }
-                    17134 { "1803" }
-                    #17763 { "1809" }
-                    18362 { "1903" }
-                    18363 { "1909" }
-                    19041 { "2004" }
-                    default {
-                        if ($OSVersionBuild -ge 9841) {
-                            "Build $($OSVersion.Build.ToString())"
-                        }
-                    }
-                }
-            }
-            MacOS {
-                switch ($OSVersionBuild) {
-                    14 { "10.10 Yosemite" }
-                    15 { "10.11 El Capitan" }
-                    16 { "10.12 Sierra" }
-                    17 { "10.13 High Sierra" }
-                    18 { "10.14 Mojave" }
-                    19 { "10.15 Catalina" }
-                    20 { "11.0 Big Sur" }
-                }
-            }
             Linux {
                 if ($LinuxOSRelease) {
                     ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
+                }
+                else {
+                    "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
+                }
+            }
+            MacOS {
+                "$($OSVersion.Major).$($OSVersion.Minor)"
+            }
+            Windows {
+                if ($WindowsCurrentVersion.CSDVersion) {
+                    $WindowsCurrentVersion.CSDVersion
+                }
+                elseif ($WindowsCurrentVersion.ReleaseId) {
+                    $WindowsCurrentVersion.ReleaseId
+                }
+                elseif ($OSVersion.Build -ge 9841) {
+                    "Build $($OSVersion.Build)"
+                }
+                else {
+                    "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
                 }
             }
         }
     }
 
     $OSName = Get-OSName
-    $OSRelease = Get-OSVersionRelease
+    $OSRelease = Get-OSRelease
 
-    if (!$OSRelease) {
-        $OSRelease = "$($OSVersion.Major.ToString()).$($OSVersion.Minor.ToString()).$($OSVersion.Build.ToString())"
-    }
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Version -Value $OSVersion
 
-    $HelloOSReleaseReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
-    $HelloOSReleaseReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
-    $HelloOSReleaseReturn | Add-Member -MemberType NoteProperty -Name Verison -Value $OSVersion
-
-    $HelloOSReleaseReturn
+    $HelloOSDetailsReturn
 }
 
 function Get-HelloProcess {
@@ -388,7 +325,7 @@ function Write-Hello {
         }
     }
 
-    $OSRelease = Get-HelloOSRelease
+    $OSDetails = Get-HelloOSDetails
     $Process = Get-HelloProcess
     $Uptime = Get-HelloUptime
 
@@ -404,8 +341,8 @@ function Write-Hello {
     Write-Host " ($($Process.InstanceId))" -ForegroundColor DarkGray
 
     Write-LinePrefix -Line 3 -Icon "~" -IconColor Green
-    Write-Host $OSRelease.Name -ForegroundColor White -n
-    Write-Host " $($OSRelease.Release)" -ForegroundColor DarkGray
+    Write-Host $OSDetails.Name -ForegroundColor White -n
+    Write-Host " $($OSDetails.Release)" -ForegroundColor DarkGray
 
     Write-LinePrefix -Line 4 -Icon "@" -IconColor Cyan
     Write-Host $Hostname -ForegroundColor White -n
