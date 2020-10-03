@@ -66,7 +66,7 @@ else {
 
 #endregion
 
-#region Configuration
+#region Settings
 
 function Set-HelloDefaultSetting {
     Param(
@@ -87,7 +87,7 @@ else {
     Set-HelloDefaultSetting -Key "CARET" -DefaultValue ">"
 }
 
-Set-HelloDefaultSetting -Key "LOGOCOLOR" -DefaultValue "Red"
+Set-HelloDefaultSetting -Key "LOGOCOLOR" -DefaultValue "Cyan"
 
 #endregion
 
@@ -408,8 +408,6 @@ function Update-Hello {
     $NewVersion = $HelloVersion
     $DotSource = ". $InstallLocation"
     $InstallMessagePrefix = (@( { Installing }, { Updating })[$IsInstalled]).ToString().Trim()
-
-    Write-Output $OnlineInstallUrl
 
     if ($Online) {
         $InstallSource = $OnlineInstallLocation
