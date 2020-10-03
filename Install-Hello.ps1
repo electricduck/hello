@@ -3,7 +3,7 @@
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.5 =
+# ======================= 20.6 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
@@ -23,7 +23,7 @@
 # #                                                                           #
 # #############################################################################
 
-Set-Alias -Name clear -Value Restart-Shell -Option AllScope
+#region Global variables
 
 enum PSCompat {
     UnknownCompat
@@ -38,31 +38,64 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.5"
-$HostEncoding = ([Console]::OutputEncoding).CodePage
-$Hostname = ([net.dns]::GetHostName())
+$HelloVersion = "20.6"
+$HostName = ([net.dns]::GetHostName())
+[OS]$HostOS = [OS]::UnknownOS
 $HostUsername = ([System.Environment]::UserName)
-[OS]$OS = [OS]::UnknownOS
+$HostUnicode = (([Console]::OutputEncoding).CodePage) -in 65001, 1208, 4110
 [PSCompat]$PSCompat = [PSCompat]::UnknownCompat
 $PSVersion = $PSVersionTable.PSVersion
 
 if ($PSVersion.Major -lt 6) {
     $PSCompat = [PSCompat]::Legacy
-    $OS = [OS]::Windows
+    $HostOS = [OS]::Windows
 }
 else {
     $PSCompat = [PSCompat]::Core
 
     if ($IsWindows) {
-        $OS = [OS]::Windows
+        $HostOS = [OS]::Windows
     }
     elseif ($IsMacOS) {
-        $OS = [OS]::MacOS
+        $HostOS = [OS]::MacOS
     }
     elseif ($IsLinux) {
-        $OS = [OS]::Linux
+        $HostOS = [OS]::Linux
     }
 }
+
+#endregion
+
+#region Settings
+
+function Set-HelloDefaultSetting {
+    Param(
+        [ValidateSet("AllowUnsupported", "Caret", "LogoColor", "UseBuiltInPrompt", "WelcomeHighColor", "WelcomeLowColor")]
+        [string]$Key,
+        [object]$DefaultValue
+    )
+    
+    if (!([Environment]::GetEnvironmentVariable("HELLO_$Key", "Process"))) {
+        [Environment]::SetEnvironmentVariable("HELLO_$Key", $DefaultValue, "Process")
+    }
+}
+
+if ($HostUnicode) {
+    Set-HelloDefaultSetting -Key "Caret" -DefaultValue "➜"
+}
+else {
+    Set-HelloDefaultSetting -Key "Caret" -DefaultValue ">"
+}
+
+Set-HelloDefaultSetting -Key "AllowUnsupported" -DefaultValue $false
+Set-HelloDefaultSetting -Key "LogoColor" -DefaultValue "Cyan"
+Set-HelloDefaultSetting -Key "UseBuiltInPrompt" -DefaultValue $false
+Set-HelloDefaultSetting -Key "WelcomeHighColor" -DefaultValue "White"
+Set-HelloDefaultSetting -Key "WelcomeLowColor" -DefaultValue "Gray"
+
+#endregion
+
+#region Functions
 
 function Assert-HelloSupportedPowershell {
     if (
@@ -78,12 +111,17 @@ function Assert-HelloSupportedPowershell {
 }
 
 function Assert-HelloUseBuiltInPrompt {
-    if (Get-Command "starship" -ErrorAction SilentlyContinue) {
-        Invoke-Expression (&starship init powershell)
-        $false
+    if ($env:HELLO_UseBuiltInPrompt -eq $true) {
+        $true
     }
     else {
-        $true
+        if (Get-Command "starship" -ErrorAction SilentlyContinue) {
+            Invoke-Expression (&starship init powershell)
+            $false
+        }
+        else {
+            $true
+        }
     }
 }
 
@@ -111,46 +149,42 @@ function Get-HelloLogoPart {
 function Get-HelloOSDetails {
     $HelloOSDetailsReturn = New-Object -TypeName PSObject
 
-    $OSName = ""
-    $OSRelease = ""
-    $OSVersion = [Environment]::OSVersion.Version
+    $HostOSName = ""
+    $HostOSRelease = ""
+    $HostOSVersion = [Environment]::OSVersion.Version
 
-    switch ($OS) {
+    switch ($HostOS) {
         Linux {
-            $LinuxOSRelease = if ($OS -eq [OS]::Linux) {
-                if (Test-Path /etc/os-release) {
-                    (Get-Content /etc/os-release)
-                }
+            $LinuxOSRelease = if (Test-Path /etc/os-release) {
+                (Get-Content /etc/os-release)
             }
 
             if ($LinuxOSRelease) {
-                $OSName = (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
+                $HostOSName = (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
                 Replace("elementary OS", "elementaryOS").
                 Replace("Debian GNU/Linux", "Debian")
 
-                $OSRelease = ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
+                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
             }
             else {
-                $OSName = "Linux"
-                $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
+                $HostOSName = "Linux"
+                $HostOSRelease = "$($HostOSVersion.Major).$($HostOSVersion.Minor).$($HostOSVersion.Build)"
             }
         }
         MacOS {
-            $OSName = if ($OSVersion.Build -lt 16) {
+            $HostOSName = if ($HostOSVersion.Build -lt 16) {
                 "OSX"
             }
-            elseif ($OSVersion.Build -le 16) {
+            elseif ($HostOSVersion.Build -le 16) {
                 "macOS"
             }
 
-            $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor)"
+            $HostOSRelease = "$($HostOSVersion.Major).$($HostOSVersion.Minor)"
         }
         Windows {
-            $WindowsCurrentVersion = if ($OS -eq [OS]::Windows) {
-                Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
-            }
+            $WindowsCurrentVersion = Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
 
-            $OSName = if ($WindowsCurrentVersion.ProductName) {
+            $HostOSName = if ($WindowsCurrentVersion.ProductName) {
                 $WindowsCurrentVersion.ProductName.
                 Replace("Microsoft Windows", "Windows")
             }
@@ -158,33 +192,30 @@ function Get-HelloOSDetails {
                 "Windows"
             }
 
-            $OSRelease = if ($WindowsCurrentVersion.CSDVersion) {
+            $HostOSRelease = if ($WindowsCurrentVersion.CSDVersion) {
                 $WindowsCurrentVersion.CSDVersion
             }
             elseif ($WindowsCurrentVersion.ReleaseId) {
                 $WindowsCurrentVersion.ReleaseId
             }
-            elseif ($OSVersion.Build -ge 9841) {
-                "Build $($OSVersion.Build)"
+            elseif ($HostOSVersion.Build -ge 9841) {
+                "Build $($HostOSVersion.Build)"
             }
             elseif (
                 # TODO: Better way of picking up official builds that don't have a ReleaseId/CSDVersion
-                $OSVersion.Build -eq 7600 -or # 7 / 2008 R2
-                $OSVersion.Build -eq 9200 -or # 8 / 2012
-                $OSVersion.Build -eq 9600 -or # 8.1 / 2012 R2
-                $OSVersion.Build -eq 10240    # 10 1507
+                $HostOSVersion.Build -in 7600, 9200, 9600, 10240 # 7600: 7 / 2008 R2; 9200: 8 / 2012; 9600: 8.1 / 2012 R2; 10240: 10 1507
             ) {
                 ""
             }
             else {
-                "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
+                "$($HostOSVersion.Major).$($HostOSVersion.Minor).$($HostOSVersion.Build)"
             }
         }
     }
 
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Version -Value $OSVersion
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $HostOSName
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $HostOSRelease
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Version -Value $HostOSVersion
 
     $HelloOSDetailsReturn
 }
@@ -206,7 +237,7 @@ function Get-HelloUptime {
             [string]$PluralPrefix = "days"
         )
 
-        if ($amount -eq 1) {
+        if ($Amount -eq 1) {
             $SingularPrefix
         }
         else {
@@ -234,26 +265,7 @@ function Get-HelloUptime {
     $HelloUptimeReturn
 }
 
-function Get-PaddedEmoji {
-    Param(
-        [string]$Emoji
-    )
-
-    if ($OS -eq [OS]::Windows) {
-        "$Emoji "
-    }
-    else {
-        if ($Emoji.Length -eq 1) {
-            "$Emoji "
-        }
-        else {
-            "$Emoji  "
-        }
-    }
-}
-
 function Write-HelloPrompt {
-    $Caret = ">"
     $Path = (Get-Location).Path
     $ShortPath = Split-Path -leaf -path $Path
 
@@ -265,24 +277,11 @@ function Write-HelloPrompt {
         $ShortPath = "~"
     }
 
-    if ($env:Hello_Caret) {
-        $Caret = $env:Hello_Caret
-    }
-    else {
-        if (
-            $HostEncoding -eq 65001 -or
-            $HostEncoding -eq 1208 -or
-            $HostEncoding -eq 4110
-        ) {
-            $Caret = "➜"
-        }
-    }
-
-    $Host.UI.RawUI.WindowTitle = "$($Hostname):$Path"
+    $Host.UI.RawUI.WindowTitle = "$($HostName):$Path"
 
     Write-Host " "
     Write-Host $ShortPath -f Gray -n
-    Write-Host " $Caret" -f Cyan -n
+    Write-Host " $env:HELLO_Caret" -f Cyan -n
 }
 
 function Write-Hello {
@@ -293,18 +292,7 @@ function Write-Hello {
             [ConsoleColor]$IconColor = [ConsoleColor]::Gray
         )
 
-        [ConsoleColor]$LogoColor = [ConsoleColor]::Cyan
-
-        if ($env:Hello_LogoColor) {
-            $LogoColor = $env:Hello_LogoColor
-        }
-        else {
-            if ($PSVersion.Major -ge 6) {
-                $LogoColor = [ConsoleColor]::Blue
-            }
-        }
-
-        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $LogoColor -n
+        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $env:HELLO_LogoColor -n
     
         if ($Icon) {
             Write-Host "$Icon " -f $IconColor -n
@@ -314,7 +302,7 @@ function Write-Hello {
         }
     }
 
-    $OSDetails = Get-HelloOSDetails
+    $HostOSDetails = Get-HelloOSDetails
     $Process = Get-HelloProcess
     $Uptime = Get-HelloUptime
 
@@ -322,26 +310,26 @@ function Write-Hello {
     Write-LinePrefix -Line 0
 
     Write-LinePrefix -Line 1 -Icon "$" -IconColor Red
-    Write-Host "PowerShell " -ForegroundColor White -n
-    Write-Host $PSVersion -ForegroundColor DarkGray
+    Write-Host "PowerShell " -ForegroundColor $env:HELLO_WelcomeHighColor -n
+    Write-Host $PSVersion -ForegroundColor $env:HELLO_WelcomeLowColor
 
     Write-LinePrefix -Line 2 -Icon "#" -IconColor Yellow
-    Write-Host $Process.PID -ForegroundColor White -n
-    Write-Host " ($($Process.InstanceId))" -ForegroundColor DarkGray
+    Write-Host $Process.PID -ForegroundColor $env:HELLO_WelcomeHighColor -n
+    Write-Host " ($($Process.InstanceId))" -ForegroundColor $env:HELLO_WelcomeLowColor
 
     Write-LinePrefix -Line 3 -Icon "~" -IconColor Green
-    Write-Host $OSDetails.Name -ForegroundColor White -n
-    Write-Host " $($OSDetails.Release)" -ForegroundColor DarkGray
+    Write-Host $HostOSDetails.Name -ForegroundColor $env:HELLO_WelcomeHighColor -n
+    Write-Host " $($HostOSDetails.Release)" -ForegroundColor $env:HELLO_WelcomeLowColor
 
     Write-LinePrefix -Line 4 -Icon "@" -IconColor Cyan
-    Write-Host $Hostname -ForegroundColor White -n
-    Write-Host "/" -ForegroundColor DarkGray -n
-    Write-Host $HostUsername -ForegroundColor White
+    Write-Host $HostName -ForegroundColor $env:HELLO_WelcomeHighColor -n
+    Write-Host "/" -ForegroundColor $env:HELLO_WelcomeLowColor -n
+    Write-Host $HostUsername -ForegroundColor $env:HELLO_WelcomeHighColor
 
     Write-LinePrefix -Line 5 -Icon "+" -IconColor Magenta
-    Write-Host "$($Uptime.HoursRounded) $($Uptime.HourSuffix)" -ForegroundColor White -n
+    Write-Host "$($Uptime.HoursRounded) $($Uptime.HourSuffix)" -ForegroundColor $env:HELLO_WelcomeHighColor -n
     if ($Uptime.Days -ne 0) {
-        Write-Host " ($($Uptime.Days) $($Uptime.DaySuffix))" -ForegroundColor DarkGray
+        Write-Host " ($($Uptime.Days) $($Uptime.DaySuffix))" -ForegroundColor $env:HELLO_WelcomeLowColor
     }
     else {
         Write-Host ""
@@ -360,40 +348,55 @@ function Update-Hello {
     function Write-StatusMessage {
         Param(
             [string]$Message,
-            [string[]]$DebugMessages,
-            [string]$Icon = "⚙️",
-            [ConsoleColor]$MessageColor = [ConsoleColor]::Yellow,
-            [ConsoleColor]$DebugMessagesColor = [ConsoleColor]::DarkGray,
-            [bool]$DebugMessagesOnly = $false
+            [string[]]$Messages,
+            [ValidateSet("Debug", "Doing", "Error", "Message", "Success")]
+            [string]$Type = "Doing",
+            [bool]$Timestamp = $false
         )
 
-        if (!$DebugMessagesOnly) {
-            Write-Host (Get-PaddedEmoji $Icon) -n
-            Write-Host $Message -ForegroundColor $MessageColor
+        $MessageColor = switch ($Type) {
+            "Debug" { [ConsoleColor]::Gray }
+            "Doing" { [ConsoleColor]::Cyan }
+            "Error" { [ConsoleColor]::Red }
+            "Message" { [ConsoleColor]::White }
+            "Success" { [ConsoleColor]::Green }
         }
+        $MessagePrefix = ""
         
-        if ($DebugMessages) {
-            foreach ($DebugMessage in $DebugMessages) {
-                Write-Host "   $DebugMessage" -ForegroundColor $DebugMessagesColor
-            }
+        if ($Type -ne "Message") {
+            $MessagePrefix = "[$(Get-Date -Format 'HH:mm:ss.ffff')]"
+        }
+        else {
+            $MessagePrefix = "               "
+        }
+
+        if (!$Messages) {
+            $Messages = @($Message)
+        }
+
+        foreach ($Message in $Messages) {
+            Write-Host $MessagePrefix -n -ForegroundColor DarkGray
+            Write-Host " $Message" -ForegroundColor $MessageColor
         }
     }
 
-    if (!(Assert-HelloSupportedPowershell)) {
-        Write-StatusMessage "Unsupported PowerShell version ($($PSVersion.Major).$($PSVersion.Minor))" -Icon "⚠️" -MessageColor Red -DebugMessages @("Set `$env:Hello_AllowUnsupported to `$true to continue with installation")
+    if ((Assert-HelloSupportedPowershell) -eq $false) {
+        Write-StatusMessage "Unsupported PowerShell version ($($PSVersion.Major).$($PSVersion.Minor))" -Type "Error"
+        Write-StatusMessage "Set `$env:HELLO_AllowUnsupported to `$true to continue with installation" -Type "Debug"
 
-        if (!($env:Hello_AllowUnsupported -eq $true)) {
+        if ($env:HELLO_AllowUnsupported -eq $false) {
             Exit 0
         }
     }
 
     if (!(Test-Path $PROFILE)) {
-        Write-StatusMessage "Creating PowerShell profile..." @($PROFILE)
+        Write-StatusMessage "Creating PowerShell profile..."
+        Write-StatusMessage $PROFILE -Type "Debug"
         New-Item $PROFILE -ItemType File -Force | Out-Null
     }
     else {
         if ((Select-String -Path $PROFILE -Pattern "#  ____  _                           ___")) {
-            Write-StatusMessage "Deleting old Plunge install..." -Icon "🗑" -MessageColor Red
+            Write-StatusMessage "Deleting old Plunge install..." -Type "Doing"
             Clear-Content $PROFILE -Force | Out-Null
         }
     }
@@ -407,15 +410,14 @@ function Update-Hello {
     $DotSource = ". $InstallLocation"
     $InstallMessagePrefix = (@( { Installing }, { Updating })[$IsInstalled]).ToString().Trim()
 
-    Write-Output $OnlineInstallUrl
-
     if ($Online) {
         $InstallSource = $OnlineInstallLocation
-        Write-StatusMessage "Downloading from Github..." -Icon "⬇️"
+        Write-StatusMessage "Downloading from Github..."
         Invoke-WebRequest $OnlineInstallUrl -out $InstallSource | Out-Null
     }
 
-    Write-StatusMessage "$InstallMessagePrefix..." @($InstallLocation)
+    Write-StatusMessage "$InstallMessagePrefix..."
+    Write-StatusMessage $InstallLocation -Type "Debug"
     Copy-Item $InstallSource $InstallLocation -Force
 
     if (!(Select-String -Path $PROFILE -Pattern $DotSource)) {
@@ -423,7 +425,7 @@ function Update-Hello {
         Add-Content $PROFILE $DotSource
     }
 
-    Write-StatusMessage "Cleaning up..." -Icon "🧹"
+    Write-StatusMessage "Cleaning up..."
     $OriginalFile = Get-Content $InstallLocation
     $OriginalBytes = $OriginalFile.Length
     $ModifiedFile = $OriginalFile
@@ -441,20 +443,25 @@ function Update-Hello {
     $ModifiedBytes = $ModifiedFile.Length
     $SavedBytes = $OriginalBytes - $ModifiedBytes
     $SavedBytesPercentage = (($ModifiedBytes - $OriginalBytes) / $OriginalBytes) * -1 * 100
-    Write-StatusMessage -DebugMessagesOnly $true -DebugMessages @("Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)")
+    Write-StatusMessage "Shrunk by $([Math]::Round($SavedBytesPercentage, 2))% ($SavedBytes bytes)" -Type "Debug"
     
     $NewVersion = (Select-String -Path $InstallLocation -Pattern '^\$HelloVersion\s=\s"(\d+\.\d+)"$').Matches.Groups[1].Value
     if ($DevBranch) {
         $NewVersion = "$NewVersion-dev"
     }
 
-    Write-StatusMessage "Hello $NewVersion installed!" @("Keep Hello updated by running Update-Hello", "Bug reports can be filed to https://github.com/electricduck/hello/issues", "", "To begin, restart your shell") -Icon "✔️" -MessageColor Green -DebugMessagesColor White
+    Write-StatusMessage "Hello $NewVersion installed!" -Type "Success"
+    Write-StatusMessage -Messages @("Keep Hello updated by running Update-Hello", "Bug reports can be filed to https://github.com/electricduck/hello/issues", "", "To begin, restart your shell") -Type "Message"
 }
 
 function Restart-Shell {
     Clear-Host
     Write-Hello
 }
+
+#endregion
+
+#region Startup
 
 if ($MyInvocation.MyCommand.Name.ToLower() -eq "install-hello.ps1") {
     Update-Hello -Online $false -Path $MyInvocation.MyCommand.Path
@@ -471,3 +478,5 @@ if ($Host.Name.ToString() -eq "ConsoleHost") {
         }
     }
 }
+
+#endregion
