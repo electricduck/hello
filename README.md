@@ -26,13 +26,13 @@ Using PowerShell 5.1 **or** [Powershell Core 6.0+](https://github.com/powershell
 
 ### Updating
 
-You can grab the latest release of Hello by issuing the below command. This will automatically download the latest stable release and install it; restart your shell to use.
+Updating Hello to the latest release can be done by issuing the below command. This will automatically download the latest stable release and install it; restart your shell to use.
 
 ```
 ~ ➜ Update-Hello
 ```
 
-You can also grab the latest development release by setting `-Dev` to `$true`. However, if something breaks and Hello no longer works, there is no way to revert this: you will need to destroy `hello.ps1` and install a fresh copy.
+Updating Hello to the latest **development release** can be done by setting the `-Dev` parameter to `$true`. However, if something breaks and Hello no longer works, there is no way to revert this: you will need to destroy `hello.ps1` and install a fresh copy.
 
 ### Configuring
 
@@ -60,7 +60,7 @@ Set-Alias -Name cl -Value Clear-Host -Option AllScope # Create an alias for Clea
 . /home/you/.config/powershell/hello.ps1
 ```
 
-You can also temporarily set configuration variables via the shell.
+To test, configuration variables can also be temporarily set via the shell.
 
 ```
 ~ ➜ $env:HELLO_Caret = "👉" # Temporarily set an environment variable
