@@ -24,6 +24,16 @@ Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw
 
 Using PowerShell 5.1 **or** [Powershell Core 6.0+](https://github.com/powershell/powershell), issue the above command, and then restart your shell. Easy, right?
 
+### Updating
+
+You can grab the latest release of Hello by issuing the below command. This will automatically download the latest stable release and install it; restart your shell to use.
+
+```
+~ ➜ Update-Hello
+```
+
+You can also grab the latest development release by setting `-Dev` to `$true`. However, if something breaks and Hello no longer works, there is no way to revert this: you will need to destroy `hello.ps1` and install a fresh copy.
+
 ### Configuring
 
 Basic customization is possible by setting environment variables in `$PROFILE`.
