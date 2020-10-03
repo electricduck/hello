@@ -50,7 +50,7 @@ Set-Alias -Name cl -Value Clear-Host -Option AllScope # Create an alias for Clea
 . /home/you/.config/powershell/hello.ps1
 ```
 
-You can also temporarily set configuration variables at the prompt.
+You can also temporarily set configuration variables via the shell.
 
 ```
 ~ ➜ $env:HELLO_Caret = "👉" # Temporarily set an environment variable
