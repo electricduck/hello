@@ -23,7 +23,7 @@
 # #                                                                           #
 # #############################################################################
 
-Set-Alias -Name clear -Value Restart-Shell -Option AllScope
+#region Global variables
 
 enum PSCompat {
     UnknownCompat
@@ -63,6 +63,33 @@ else {
         $OS = [OS]::Linux
     }
 }
+
+#endregion
+
+#region Configuration
+
+function Set-HelloDefaultSetting {
+    Param(
+        [ValidateSet("CARET", "LOGOCOLOR")]
+        [string]$Key,
+        [object]$DefaultValue
+    )
+    
+    if(!([Environment]::GetEnvironmentVariable("HELLO_$Key", "Process"))) {
+        [Environment]::SetEnvironmentVariable("HELLO_$Key", $DefaultValue, "Process")
+    }
+}
+
+if ($HostEncoding -in 65001, 1208, 4110) {
+    Set-HelloDefaultSetting -Key "CARET" -DefaultValue "➜"
+}
+else {
+    Set-HelloDefaultSetting -Key "CARET" -DefaultValue ">"
+}
+
+Set-HelloDefaultSetting -Key "LOGOCOLOR" -DefaultValue "Red"
+
+#endregion
 
 function Assert-HelloSupportedPowershell {
     if (
@@ -253,7 +280,6 @@ function Get-PaddedEmoji {
 }
 
 function Write-HelloPrompt {
-    $Caret = ">"
     $Path = (Get-Location).Path
     $ShortPath = Split-Path -leaf -path $Path
 
@@ -265,24 +291,11 @@ function Write-HelloPrompt {
         $ShortPath = "~"
     }
 
-    if ($env:Hello_Caret) {
-        $Caret = $env:Hello_Caret
-    }
-    else {
-        if (
-            $HostEncoding -eq 65001 -or
-            $HostEncoding -eq 1208 -or
-            $HostEncoding -eq 4110
-        ) {
-            $Caret = "➜"
-        }
-    }
-
     $Host.UI.RawUI.WindowTitle = "$($Hostname):$Path"
 
     Write-Host " "
     Write-Host $ShortPath -f Gray -n
-    Write-Host " $Caret" -f Cyan -n
+    Write-Host " $env:HELLO_CARET" -f Cyan -n
 }
 
 function Write-Hello {
@@ -293,18 +306,7 @@ function Write-Hello {
             [ConsoleColor]$IconColor = [ConsoleColor]::Gray
         )
 
-        [ConsoleColor]$LogoColor = [ConsoleColor]::Cyan
-
-        if ($env:Hello_LogoColor) {
-            $LogoColor = $env:Hello_LogoColor
-        }
-        else {
-            if ($PSVersion.Major -ge 6) {
-                $LogoColor = [ConsoleColor]::Blue
-            }
-        }
-
-        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $LogoColor -n
+        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $env:HELLO_LOGOCOLOR -n
     
         if ($Icon) {
             Write-Host "$Icon " -f $IconColor -n
