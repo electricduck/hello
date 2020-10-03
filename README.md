@@ -78,8 +78,3 @@ To test, configuration variables can also be temporarily set via the shell.
 | **WelcomeLowColor** | String | _Low color of welcome messages (i.e. "7.0.1")_ | `"Gray"` |
 
 ###### * In PowerShell, bools are expressed as `$true` or `$false`
-
-
-## Contributing
-
-__(todo)__
