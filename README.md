@@ -77,5 +77,4 @@ To test, configuration variables can also be temporarily set via the shell.
 | **ColorHigh**        | String   | _High color_                                                                       | `"White"`   |
 | **ColorLow**         | String   | _Low color_                                                                        | `"Gray"`    |
 
-###### * In PowerShell, bools are expressed as `$true` or `$false`
-###### ** If Unicode support is off, use `">"`
+###### * In PowerShell, bools are expressed as `$true` or `$false`<br />** If Unicode support is off, use `">"`
