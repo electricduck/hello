@@ -354,7 +354,7 @@ function Update-Hello {
         )
 
         $MessageColor = switch ($Type) {
-            "Debug" { [ConsoleColor]::Gray }
+            "Debug" { [ConsoleColor]::DarkGray }
             "Doing" { [ConsoleColor]::Cyan }
             "Error" { [ConsoleColor]::Red }
             "Message" { [ConsoleColor]::White }
