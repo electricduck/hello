@@ -3,7 +3,7 @@
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.7 =
+# ======================= 20.8 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
@@ -38,11 +38,11 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.7"
-$HostName = ([net.dns]::GetHostName())
+$HelloVersion = "20.8"
+$HostName = [net.dns]::GetHostName()
 [OS]$HostOS = [OS]::UnknownOS
-$HostUsername = ([System.Environment]::UserName)
 $HostUnicode = (([Console]::OutputEncoding).CodePage) -in 65001, 1208, 4110
+$HostUsername = [System.Environment]::UserName
 [PSCompat]$PSCompat = [PSCompat]::UnknownCompat
 $PSVersion = $PSVersionTable.PSVersion
 
@@ -70,7 +70,7 @@ else {
 
 function Set-HelloDefaultSetting {
     Param(
-        [ValidateSet("AllowUnsupported", "Caret", "LogoColor", "UseBuiltInPrompt", "WelcomeHighColor", "WelcomeLowColor")]
+        [ValidateSet("AllowUnsupported", "Caret", "ColorAccent", "ColorHigh", "ColorLow", "UseBuiltInPrompt")]
         [string]$Key,
         [object]$DefaultValue
     )
@@ -88,10 +88,10 @@ else {
 }
 
 Set-HelloDefaultSetting -Key "AllowUnsupported" -DefaultValue $false
-Set-HelloDefaultSetting -Key "LogoColor" -DefaultValue "Cyan"
+Set-HelloDefaultSetting -Key "ColorAccent" -DefaultValue "Cyan"
+Set-HelloDefaultSetting -Key "ColorHigh" -DefaultValue "White"
+Set-HelloDefaultSetting -Key "ColorLow" -DefaultValue "Gray"
 Set-HelloDefaultSetting -Key "UseBuiltInPrompt" -DefaultValue $false
-Set-HelloDefaultSetting -Key "WelcomeHighColor" -DefaultValue "White"
-Set-HelloDefaultSetting -Key "WelcomeLowColor" -DefaultValue "Gray"
 
 #endregion
 
@@ -279,8 +279,8 @@ function Write-HelloPrompt {
     $Host.UI.RawUI.WindowTitle = "$($HostName):$Path"
 
     Write-Host " "
-    Write-Host $ShortPath -f Gray -n
-    Write-Host " $env:HELLO_Caret" -f Cyan -n
+    Write-Host $ShortPath -f $env:HELLO_ColorLow -n
+    Write-Host " $env:HELLO_Caret" -f $env:HELLO_ColorAccent -n
 }
 
 function Write-Hello {
@@ -288,10 +288,10 @@ function Write-Hello {
         Param(
             [int]$Line,
             [string]$Icon,
-            [ConsoleColor]$IconColor = [ConsoleColor]::Gray
+            [ConsoleColor]$IconColor = [ConsoleColor]::White
         )
 
-        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $env:HELLO_LogoColor -n
+        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $env:HELLO_ColorAccent -n
     
         if ($Icon) {
             Write-Host "$Icon " -f $IconColor -n
@@ -309,26 +309,26 @@ function Write-Hello {
     Write-LinePrefix -Line 0
 
     Write-LinePrefix -Line 1 -Icon "$" -IconColor Red
-    Write-Host "PowerShell " -ForegroundColor $env:HELLO_WelcomeHighColor -n
-    Write-Host $PSVersion -ForegroundColor $env:HELLO_WelcomeLowColor
+    Write-Host "PowerShell " -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host $PSVersion -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 2 -Icon "#" -IconColor Yellow
-    Write-Host $Process.PID -ForegroundColor $env:HELLO_WelcomeHighColor -n
-    Write-Host " ($($Process.InstanceId))" -ForegroundColor $env:HELLO_WelcomeLowColor
+    Write-Host $Process.PID -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host " ($($Process.InstanceId))" -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 3 -Icon "~" -IconColor Green
-    Write-Host $HostOSDetails.Name -ForegroundColor $env:HELLO_WelcomeHighColor -n
-    Write-Host " $($HostOSDetails.Release)" -ForegroundColor $env:HELLO_WelcomeLowColor
+    Write-Host $HostOSDetails.Name -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host " $($HostOSDetails.Release)" -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 4 -Icon "@" -IconColor Cyan
-    Write-Host $HostName -ForegroundColor $env:HELLO_WelcomeHighColor -n
-    Write-Host "/" -ForegroundColor $env:HELLO_WelcomeLowColor -n
-    Write-Host $HostUsername -ForegroundColor $env:HELLO_WelcomeHighColor
+    Write-Host $HostName -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host "/" -ForegroundColor $env:HELLO_ColorLow -n
+    Write-Host $HostUsername -ForegroundColor $env:HELLO_ColorHigh
 
     Write-LinePrefix -Line 5 -Icon "+" -IconColor Magenta
-    Write-Host "$($Uptime.HoursRounded) $($Uptime.HourSuffix)" -ForegroundColor $env:HELLO_WelcomeHighColor -n
+    Write-Host "$($Uptime.HoursRounded) $($Uptime.HourSuffix)" -ForegroundColor $env:HELLO_ColorHigh -n
     if ($Uptime.Days -ne 0) {
-        Write-Host " ($($Uptime.Days) $($Uptime.DaySuffix))" -ForegroundColor $env:HELLO_WelcomeLowColor
+        Write-Host " ($($Uptime.Days) $($Uptime.DaySuffix))" -ForegroundColor $env:HELLO_ColorLow
     }
     else {
         Write-Host ""
@@ -374,7 +374,7 @@ function Update-Hello {
         }
 
         foreach ($Message in $Messages) {
-            Write-Host $MessagePrefix -n -ForegroundColor DarkGray
+            Write-Host $MessagePrefix -n -ForegroundColor $env:HELLO_ColorLow
             Write-Host " $Message" -ForegroundColor $MessageColor
         }
     }

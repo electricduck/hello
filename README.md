@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://github.com/electricduck/hello">
-    <img src=".github/logo.png" width=80 height=80>
+    <img src="./.github/logo.png" width=128>
   </a>
 
-  <h3 align="center">Hello</h3>
+  <h3 align="center"><strong>Hello</strong></h3>
 
   <p align="center">
     A colourful welcome mat for PowerShell
@@ -52,7 +52,7 @@ Configuration variables **must** be added above the above line, and must be prec
 
 ```
 $env:HELLO_Caret = "👉"      # Change Hello's prompt from ➜ to a 👉
-$env:HELLO_LogoColor = "Red" # Change Hello's logo from cyan to red
+$env:HELLO_ColorAccent = "Red" # Change Hello's logo and caret from cyan to red
 
 # Some other stuff
 Set-Alias -Name cl -Value Clear-Host -Option AllScope # Create an alias for Clear-Host as "cl"
@@ -69,12 +69,13 @@ To test, configuration variables can also be temporarily set via the shell.
 
 #### Possible variables
 
-| **Variable** | **Type** | **Description** | **Default** |
-| ------------ | -------- | --------------- | ----------- |
-| **AllowUnsupported** | Bool* | _Allow installing/updating on unsupported PowerShell versions_ | `$false` |
-| **Caret** | String | _Prompt character_ | `"➜"` |
-| **LogoColor** | String | _Color of the ASCII PowerShell logo_ | `"Cyan"` |
-| **WelcomeHighColor** | String | _High color of welcome messages (i.e. "PowerShell")_ | `"White"` |
-| **WelcomeLowColor** | String | _Low color of welcome messages (i.e. "7.0.1")_ | `"Gray"` |
+| **Variable**         | **Type** | **Description**                                                                    | **Default** |
+| -------------------- | -------- | ---------------------------------------------------------------------------------- | ----------- |
+| **AllowUnsupported** | Bool*    | _Allow installing/updating on unsupported PowerShell versions_                     | `$false`    |
+| **Caret**            | String   | _Prompt character_                                                                 | `"➜"`**     |
+| **ColorAccent**      | String   | _Accent color, used by:_<br />&nbsp;• _ASCII PowerShell logo_<br />&nbsp;• _Caret_ | `"Cyan"`    |
+| **ColorHigh**        | String   | _High color_                                                                       | `"White"`   |
+| **ColorLow**         | String   | _Low color_                                                                        | `"Gray"`    |
 
 ###### * In PowerShell, bools are expressed as `$true` or `$false`
+###### ** If Unicode support is off, use `">"`
