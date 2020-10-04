@@ -3,7 +3,7 @@
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.6 =
+# ======================= 20.7 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
@@ -38,7 +38,7 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.6"
+$HelloVersion = "20.7"
 $HostName = ([net.dns]::GetHostName())
 [OS]$HostOS = [OS]::UnknownOS
 $HostUsername = ([System.Environment]::UserName)
@@ -99,8 +99,7 @@ Set-HelloDefaultSetting -Key "WelcomeLowColor" -DefaultValue "Gray"
 
 function Assert-HelloSupportedPowershell {
     if (
-        ($PSVersion.Major -ge 7) -or
-        ($PSVersion.Major -eq 6 -and $PSVersion.Minor -ge 2) -or
+        ($PSCompat -eq [PSCompat]::Core) -or
         ($PSVersion.Major -eq 5 -and $PSVersion.Minor -ge 1)
     ) {
         $true
@@ -355,7 +354,7 @@ function Update-Hello {
         )
 
         $MessageColor = switch ($Type) {
-            "Debug" { [ConsoleColor]::Gray }
+            "Debug" { [ConsoleColor]::DarkGray }
             "Doing" { [ConsoleColor]::Cyan }
             "Error" { [ConsoleColor]::Red }
             "Message" { [ConsoleColor]::White }
