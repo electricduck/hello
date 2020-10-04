@@ -99,7 +99,7 @@ Set-HelloDefaultSetting -Key "WelcomeLowColor" -DefaultValue "Gray"
 
 function Assert-HelloSupportedPowershell {
     if (
-        ($PSCompact -eq [PSCompat]::Core) -or
+        ($PSCompat -eq [PSCompat]::Core) -or
         ($PSVersion.Major -eq 5 -and $PSVersion.Minor -ge 1)
     ) {
         $true
