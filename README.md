@@ -51,7 +51,7 @@ This is your PowerShell profile that is read on startup. If you've never touched
 Configuration variables **must** be added above the above line, and must be preceeded by `$env:HELLO_`. Other PowerShell statements can also be added here.
 
 ```
-$env:HELLO_Caret = "👉"      # Change Hello's prompt from ➜ to a 👉
+$env:HELLO_Caret = "👉"        # Change Hello's prompt from ➜ to a 👉
 $env:HELLO_ColorAccent = "Red" # Change Hello's logo and caret from cyan to red
 
 # Some other stuff
@@ -77,5 +77,4 @@ To test, configuration variables can also be temporarily set via the shell.
 | **ColorHigh**        | String   | _High color_                                                                       | `"White"`   |
 | **ColorLow**         | String   | _Low color_                                                                        | `"Gray"`    |
 
-###### * In PowerShell, bools are expressed as `$true` or `$false`
-###### ** If Unicode support is off, use `">"`
+###### * In PowerShell, bools are expressed as `$true` or `$false`<br />** If Unicode support is off, use `">"`
