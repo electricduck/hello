@@ -159,11 +159,11 @@ function Get-HelloOSDetails {
             }
 
             if ($LinuxOSRelease) {
-                $HostOSName = (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
+                $HostOSName = ((($LinuxOSRelease).Replace("PRETTY_NAME", "") | select-string "NAME=")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
                 Replace("elementary OS", "elementaryOS").
                 Replace("Debian GNU/Linux", "Debian")
 
-                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
+                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION=")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
             }
             else {
                 $HostOSName = "Linux"
