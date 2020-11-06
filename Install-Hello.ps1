@@ -174,7 +174,7 @@ function Get-HelloOSDetails {
             $HostOSName = if ($HostOSVersion.Build -lt 16) {
                 "OSX"
             }
-            elseif ($HostOSVersion.Build -le 16) {
+            elseif ($HostOSVersion.Build -ge 16) {
                 "macOS"
             }
 
