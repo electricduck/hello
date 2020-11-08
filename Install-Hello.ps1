@@ -1,16 +1,16 @@
-﻿#  _   _      _ _         ____  
+#  _   _      _ _         ____  
 # | | | | ___| | | ___   / /\ \ 
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.8 =
+# ======================= 20.9 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
 # #       ##   ##########  $ PowerShell 7.0.0                                 #
 # #      ####   ########   # 12345 (00000000-0000-0000-0000-000000000000)     #
 # #     ######   ######    ~ Windows 10 2009 (October 2020)                   #
-# #    ####   ########     @ Box\Me                                           #
+# #    ####   ########     @ Box/Me                                           #
 # #   ##   ###     ##      + 123 hours (5 days)                               #
 # #  ###############                                                          #
 # #                                                                           #
@@ -38,7 +38,7 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.8"
+$HelloVersion = "20.9"
 $HostName = [net.dns]::GetHostName()
 [OS]$HostOS = [OS]::UnknownOS
 $HostUnicode = (([Console]::OutputEncoding).CodePage) -in 65001, 1208, 4110
@@ -159,11 +159,11 @@ function Get-HelloOSDetails {
             }
 
             if ($LinuxOSRelease) {
-                $HostOSName = (($LinuxOSRelease | select-string "NAME")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
+                $HostOSName = ((($LinuxOSRelease).Replace("PRETTY_NAME", "") | select-string "NAME=")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
                 Replace("elementary OS", "elementaryOS").
                 Replace("Debian GNU/Linux", "Debian")
 
-                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
+                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION=")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
             }
             else {
                 $HostOSName = "Linux"
@@ -171,10 +171,10 @@ function Get-HelloOSDetails {
             }
         }
         MacOS {
-            $HostOSName = if ($HostOSVersion.Build -lt 16) {
+            $HostOSName = if ($HostOSVersion.Major -lt 16) {
                 "OSX"
             }
-            elseif ($HostOSVersion.Build -le 16) {
+            elseif ($HostOSVersion.Major -ge 16) {
                 "macOS"
             }
 
