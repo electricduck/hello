@@ -19,7 +19,7 @@
 ### Installing
 
 ```
-Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/electricduck/hello/develop/Install-Hello.ps1'))
+Invoke-WebRequest 'https://raw.githubusercontent.com/electricduck/hello/develop/Install-Hello.ps1' -OutFile Install-Hello.ps1; ./Install-Hello.ps1; Remove-Item Install-Hello.ps1
 ```
 
 Using PowerShell 5.1 **or** [Powershell Core 6.0+](https://github.com/powershell/powershell), issue the above command, and then restart your shell. Easy, right?
