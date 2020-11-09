@@ -88,9 +88,9 @@ else {
 }
 
 if ($Host.Name.ToString() -eq "ConsoleHost") {
-    Set-HelloDefaultSetting -Key "ShowMotd" -DefaultValue $true
+    Set-HelloDefaultSetting -Key "MotdVisible" -DefaultValue $true
 } else {
-    Set-HelloDefaultSetting -Key "ShowMotd" -DefaultValue $false
+    Set-HelloDefaultSetting -Key "MotdVisible" -DefaultValue $false
 }
 
 Set-HelloDefaultSetting -Key "AllowUnsupported" -DefaultValue $false
@@ -500,7 +500,7 @@ function Update-Hello {
 
 function Restart-Shell {
     Clear-Host
-    if($env:HELLO_ShowMotd -eq $true) {
+    if($env:HELLO_MotdVisible -eq $true) {
         Write-Hello
     }
 }
