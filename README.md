@@ -19,7 +19,7 @@
 ### Installing
 
 ```
-Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/electricduck/hello/develop/Install-Hello.ps1'))
+Invoke-WebRequest 'https://raw.githubusercontent.com/electricduck/hello/develop/Install-Hello.ps1' -OutFile Install-Hello.ps1; ./Install-Hello.ps1; Remove-Item Install-Hello.ps1
 ```
 
 Using PowerShell 5.1 **or** [Powershell Core 6.0+](https://github.com/powershell/powershell), issue the above command, and then restart your shell. Easy, right?
@@ -48,7 +48,7 @@ This is your PowerShell profile that is read on startup. If you've never touched
 . /home/you/.config/powershell/hello.ps1
 ```
 
-Configuration variables **must** be added above the above line, and must be preceeded by `$env:HELLO_`. Other PowerShell statements can also be added here.
+Configuration variables **must** be added above the above line. Other PowerShell statements can also be added here.
 
 ```
 $env:HELLO_Caret = "👉"        # Change Hello's prompt from ➜ to a 👉
@@ -67,14 +67,20 @@ To test, configuration variables can also be temporarily set via the shell.
 ~ ➜ pwsh                    # Spawn a child process (use 'powershell' for 5.1)
 ```
 
-#### Possible variables
+#### Environment Variables
+
+*All below variables start with `$env:HELLO_`.*
 
 | **Variable**         | **Type** | **Description**                                                                    | **Default** |
 | -------------------- | -------- | ---------------------------------------------------------------------------------- | ----------- |
-| **AllowUnsupported** | Bool*    | _Allow installing/updating on unsupported PowerShell versions_                     | `$false`    |
-| **Caret**            | String   | _Prompt character_                                                                 | `"➜"`**     |
+| **AllowUnsupported** | Bool¹    | _Allow installing/updating on unsupported PowerShell versions_                     | `$false`    |
+| **Caret**            | String   | _Prompt character_                                                                 | `"➜"`²      |
 | **ColorAccent**      | String   | _Accent color, used by:_<br />&nbsp;• _ASCII PowerShell logo_<br />&nbsp;• _Caret_ | `"Cyan"`    |
 | **ColorHigh**        | String   | _High color_                                                                       | `"White"`   |
 | **ColorLow**         | String   | _Low color_                                                                        | `"Gray"`    |
+| **MotdVisible**      | Bool¹    | _Show the welcome message on startup (or `Restart-Shell`)_                         | `$true`     |
 
-###### * In PowerShell, bools are expressed as `$true` or `$false`<br />** If Unicode support is off, use `">"`
+### Remarks
+
+- **¹** _In PowerShell, bools are expressed as `$true` or `$false`_
+- **²** _If Unicode support is off, this will use `">"` by default_

@@ -1,15 +1,15 @@
-#  _   _      _ _         ____  
+﻿#  _   _      _ _         ____  
 # | | | | ___| | | ___   / /\ \ 
 # | |_| |/ _ \ | |/ _ \ / /  \ \
 # |  _  |  __/ | | (_) / /   / /
 # |_| |_|\___|_|_|\___/_/   /_/
-# ======================= 20.9 =
+# ====================== 20.10 =
 # #[Box:~]###########################################################[-][o][x]#
 # #                                                                           #
 # #        ###############                                                    #
 # #       ##   ##########  $ PowerShell 7.0.0                                 #
 # #      ####   ########   # 12345 (00000000-0000-0000-0000-000000000000)     #
-# #     ######   ######    ~ Windows 10 2009 (October 2020)                   #
+# #     ######   ######    ~ Windows 10 20H2                                  #
 # #    ####   ########     @ Box/Me                                           #
 # #   ##   ###     ##      + 123 hours (5 days)                               #
 # #  ###############                                                          #
@@ -38,29 +38,30 @@ enum OS {
     Windows
 }
 
-$HelloVersion = "20.9"
+$HelloVersion = "20.10"
 $HostName = [net.dns]::GetHostName()
-[OS]$HostOS = [OS]::UnknownOS
 $HostUnicode = (([Console]::OutputEncoding).CodePage) -in 65001, 1208, 4110
 $HostUsername = [System.Environment]::UserName
+[OS]$OS = [OS]::UnknownOS
 [PSCompat]$PSCompat = [PSCompat]::UnknownCompat
 $PSVersion = $PSVersionTable.PSVersion
+$PSVersionShort = "$($PSVersion.Major).$($PSVersion.Minor)"
 
 if ($PSVersion.Major -lt 6) {
     $PSCompat = [PSCompat]::Legacy
-    $HostOS = [OS]::Windows
+    $OS = [OS]::Windows
 }
 else {
     $PSCompat = [PSCompat]::Core
 
     if ($IsWindows) {
-        $HostOS = [OS]::Windows
+        $OS = [OS]::Windows
     }
     elseif ($IsMacOS) {
-        $HostOS = [OS]::MacOS
+        $OS = [OS]::MacOS
     }
     elseif ($IsLinux) {
-        $HostOS = [OS]::Linux
+        $OS = [OS]::Linux
     }
 }
 
@@ -70,7 +71,6 @@ else {
 
 function Set-HelloDefaultSetting {
     Param(
-        [ValidateSet("AllowUnsupported", "Caret", "ColorAccent", "ColorHigh", "ColorLow", "UseBuiltInPrompt")]
         [string]$Key,
         [object]$DefaultValue
     )
@@ -87,10 +87,18 @@ else {
     Set-HelloDefaultSetting -Key "Caret" -DefaultValue ">"
 }
 
+if ($Host.Name.ToString() -eq "ConsoleHost") {
+    Set-HelloDefaultSetting -Key "MotdVisible" -DefaultValue $true
+} else {
+    Set-HelloDefaultSetting -Key "MotdVisible" -DefaultValue $false
+}
+
 Set-HelloDefaultSetting -Key "AllowUnsupported" -DefaultValue $false
 Set-HelloDefaultSetting -Key "ColorAccent" -DefaultValue "Cyan"
 Set-HelloDefaultSetting -Key "ColorHigh" -DefaultValue "White"
 Set-HelloDefaultSetting -Key "ColorLow" -DefaultValue "Gray"
+Set-HelloDefaultSetting -Key "TemplatePrompt" -DefaultValue "{ws} "
+Set-HelloDefaultSetting -Key "TemplateTitle" -DefaultValue "{hn}:{w}"
 Set-HelloDefaultSetting -Key "UseBuiltInPrompt" -DefaultValue $false
 
 #endregion
@@ -124,97 +132,76 @@ function Assert-HelloUseBuiltInPrompt {
     }
 }
 
-function Get-HelloLogoPart {
-    Param(
-        [int]$Line,
-        [int]$Padding = 1
-    )
-
-    if ($Padding -gt 0) {
-        0..($Padding - 1) | ForEach-Object { "" }
-    }
-
-    switch ($Line) {
-        0 { "      ############### " }
-        1 { "     ##   ##########  " }
-        2 { "    ####   ########   " }
-        3 { "   ######   ######    " }
-        4 { "  ####   ########     " }
-        5 { " ##   ###     ##      " }
-        6 { "###############       " }
-    }
-}
-
 function Get-HelloOSDetails {
     $HelloOSDetailsReturn = New-Object -TypeName PSObject
 
-    $HostOSName = ""
-    $HostOSRelease = ""
-    $HostOSVersion = [Environment]::OSVersion.Version
+    $OSName = ""
+    $OSRelease = ""
+    $OSVersion = [Environment]::OSVersion.Version
 
-    switch ($HostOS) {
+    switch ($OS) {
         Linux {
             $LinuxOSRelease = if (Test-Path /etc/os-release) {
                 (Get-Content /etc/os-release)
             }
 
             if ($LinuxOSRelease) {
-                $HostOSName = ((($LinuxOSRelease).Replace("PRETTY_NAME", "") | select-string "NAME=")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
-                Replace("elementary OS", "elementaryOS").
-                Replace("Debian GNU/Linux", "Debian")
+                $OSName = ((($LinuxOSRelease).Replace("PRETTY_NAME", "") | select-string "NAME=")[0].ToString().Replace("NAME=", "").Replace("`"", "")).
+                    Replace("elementary OS", "elementaryOS").
+                    Replace("Debian GNU/Linux", "Debian")
 
-                $HostOSRelease = ($LinuxOSRelease | select-string "VERSION=")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
-            }
-            else {
-                $HostOSName = "Linux"
-                $HostOSRelease = "$($HostOSVersion.Major).$($HostOSVersion.Minor).$($HostOSVersion.Build)"
+                $OSRelease = ($LinuxOSRelease | select-string "VERSION=")[0].ToString().Replace("VERSION=", "").Replace("`"", "")
             }
         }
         MacOS {
-            $HostOSName = if ($HostOSVersion.Build -lt 16) {
+            $OSName = if ($OSVersion.Major -lt 16) {
                 "OSX"
             }
-            elseif ($HostOSVersion.Build -le 16) {
+            elseif ($OSVersion.Major -ge 16) {
                 "macOS"
             }
 
-            $HostOSRelease = "$($HostOSVersion.Major).$($HostOSVersion.Minor)"
+            $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor)"
         }
         Windows {
             $WindowsCurrentVersion = Get-ItemProperty -Path Registry::"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
 
-            $HostOSName = if ($WindowsCurrentVersion.ProductName) {
+            $OSName = if ($WindowsCurrentVersion.ProductName) {
                 $WindowsCurrentVersion.ProductName.
                 Replace("Microsoft Windows", "Windows")
             }
-            else {
-                "Windows"
-            }
 
-            $HostOSRelease = if ($WindowsCurrentVersion.CSDVersion) {
+            $OSRelease = if ($WindowsCurrentVersion.CSDVersion) {
                 $WindowsCurrentVersion.CSDVersion
             }
             elseif ($WindowsCurrentVersion.ReleaseId) {
                 $WindowsCurrentVersion.ReleaseId
             }
-            elseif ($HostOSVersion.Build -ge 9841) {
-                "Build $($HostOSVersion.Build)"
-            }
             elseif (
                 # TODO: Better way of picking up official builds that don't have a ReleaseId/CSDVersion
-                $HostOSVersion.Build -in 7600, 9200, 9600, 10240 # 7600: 7 / 2008 R2; 9200: 8 / 2012; 9600: 8.1 / 2012 R2; 10240: 10 1507
+                $OSVersion.Build -in 7600, 9200, 9600, 10240 # 7600: 7 / 2008 R2; 9200: 8 / 2012; 9600: 8.1 / 2012 R2; 10240: 10 1507
             ) {
                 ""
             }
-            else {
-                "$($HostOSVersion.Major).$($HostOSVersion.Minor).$($HostOSVersion.Build)"
+            elseif ($OSVersion.Build -ge 9841) {
+                "Build $($OSVersion.Build)"
             }
         }
     }
 
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $HostOSName
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $HostOSRelease
-    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Version -Value $HostOSVersion
+    if($OSName -eq "")
+    {
+        $OSName = ($OS).ToString()
+    }
+
+    if($OSRelease -eq "")
+    {
+        $OSRelease = "$($OSVersion.Major).$($OSVersion.Minor).$($OSVersion.Build)"
+    }
+
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Name -Value $OSName
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Release -Value $OSRelease
+    $HelloOSDetailsReturn | Add-Member -MemberType NoteProperty -Name Version -Value $OSVersion
 
     $HelloOSDetailsReturn
 }
@@ -222,7 +209,9 @@ function Get-HelloOSDetails {
 function Get-HelloProcess {
     $HelloProcessReturn = New-Object -TypeName PSObject
 
+    $HelloProcessReturn | Add-Member -MemberType NoteProperty -Name Host -Value $Host.Name
     $HelloProcessReturn | Add-Member -MemberType NoteProperty -Name InstanceId -Value $Host.InstanceId
+    $HelloProcessReturn | Add-Member -MemberType NoteProperty -Name Name -Value "pwsh"
     $HelloProcessReturn | Add-Member -MemberType NoteProperty -Name PID -Value $PID
 
     $HelloProcessReturn
@@ -264,26 +253,83 @@ function Get-HelloUptime {
     $HelloUptimeReturn
 }
 
+function Build-HelloVariableTemplate {
+    Param(
+        [string]$Template,
+        [bool]$LoadAll = $false,
+        [bool]$LoadPath = $false,
+        [bool]$LoadProcess = $false
+    )
+
+    $Path = "?"
+    $PathShort = "?"
+    $Process = $null
+
+    if($LoadAll -or $LoadPath) {
+        $Path = (Get-Location).Path
+
+        if ($Path -eq "/") {
+            $PathShort = "/"
+        } elseif ($Path -eq $HOME) {
+            $PathShort = "~"
+        } else {
+            $PathShort = Split-Path -leaf -path $Path
+        }
+    }
+
+    if($LoadAll -or $LoadProcess) {
+        $Process = Get-HelloProcess
+    }
+
+    $Output = $Template.
+        Replace("{hn}", $HostName).
+        Replace("{hu}", $HostUsername).
+        Replace("{n}", "`n").
+        Replace("{ph}", $Process.Host).
+        Replace("{pi}", $Process.InstanceId).
+        Replace("{pn}", $Process.Name).
+        Replace("{pp}", $Process.PID).
+        Replace("{v}", $PSVersion).
+        Replace("{vs}", $PSVersionShort).
+        Replace("{w}", $Path).
+        Replace("{ws}", $PathShort)
+
+    $Output
+}
+
 function Write-HelloPrompt {
-    $Path = (Get-Location).Path
-    $ShortPath = Split-Path -leaf -path $Path
+    $Prompt = (Build-HelloVariableTemplate -Template $env:HELLO_TemplatePrompt -LoadAll $true)
+    $Title = (Build-HelloVariableTemplate -Template $env:HELLO_TemplateTitle -LoadAll $true)
 
-    if ($Path -eq "/") {
-        $ShortPath = "/"
-    }
-
-    if ($Path -eq $HOME) {
-        $ShortPath = "~"
-    }
-
-    $Host.UI.RawUI.WindowTitle = "$($HostName):$Path"
+    $Host.UI.RawUI.WindowTitle = $Title
 
     Write-Host " "
-    Write-Host $ShortPath -f $env:HELLO_ColorLow -n
-    Write-Host " $env:HELLO_Caret" -f $env:HELLO_ColorAccent -n
+    Write-Host $Prompt -f $env:HELLO_ColorLow -n
+    Write-Host "$env:HELLO_Caret" -f $env:HELLO_ColorAccent -n
 }
 
 function Write-Hello {
+    function Get-LogoPart {
+        Param(
+            [int]$Line,
+            [int]$Padding = 1
+        )
+    
+        if ($Padding -gt 0) {
+            0..($Padding - 1) | ForEach-Object { "" }
+        }
+    
+        switch ($Line) {
+            0 { "      ############### " }
+            1 { "     ##   ##########  " }
+            2 { "    ####   ########   " }
+            3 { "   ######   ######    " }
+            4 { "  ####   ########     " }
+            5 { " ##   ###     ##      " }
+            6 { "###############       " }
+        }
+    }
+
     function Write-LinePrefix {
         Param(
             [int]$Line,
@@ -291,7 +337,7 @@ function Write-Hello {
             [ConsoleColor]$IconColor = [ConsoleColor]::White
         )
 
-        Write-Host (Get-HelloLogoPart -Line $Line) -ForegroundColor $env:HELLO_ColorAccent -n
+        Write-Host (Get-LogoPart -Line $Line) -ForegroundColor $env:HELLO_ColorAccent -n
     
         if ($Icon) {
             Write-Host "$Icon " -f $IconColor -n
@@ -301,8 +347,7 @@ function Write-Hello {
         }
     }
 
-    $HostOSDetails = Get-HelloOSDetails
-    $Process = Get-HelloProcess
+    $OSDetails = Get-HelloOSDetails
     $Uptime = Get-HelloUptime
 
     Write-Host " "
@@ -310,20 +355,20 @@ function Write-Hello {
 
     Write-LinePrefix -Line 1 -Icon "$" -IconColor Red
     Write-Host "PowerShell " -ForegroundColor $env:HELLO_ColorHigh -n
-    Write-Host $PSVersion -ForegroundColor $env:HELLO_ColorLow
+    Write-Host (Build-HelloVariableTemplate -Template "{v}") -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 2 -Icon "#" -IconColor Yellow
-    Write-Host $Process.PID -ForegroundColor $env:HELLO_ColorHigh -n
-    Write-Host " ($($Process.InstanceId))" -ForegroundColor $env:HELLO_ColorLow
+    Write-Host (Build-HelloVariableTemplate -Template "{pp}" -LoadProcess $true) -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host " ($((Build-HelloVariableTemplate -Template `"{pi}`" -LoadProcess $true)))" -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 3 -Icon "~" -IconColor Green
-    Write-Host $HostOSDetails.Name -ForegroundColor $env:HELLO_ColorHigh -n
-    Write-Host " $($HostOSDetails.Release)" -ForegroundColor $env:HELLO_ColorLow
+    Write-Host $OSDetails.Name -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host " $($OSDetails.Release)" -ForegroundColor $env:HELLO_ColorLow
 
     Write-LinePrefix -Line 4 -Icon "@" -IconColor Cyan
-    Write-Host $HostName -ForegroundColor $env:HELLO_ColorHigh -n
+    Write-Host (Build-HelloVariableTemplate -Template "{hn}") -ForegroundColor $env:HELLO_ColorHigh -n
     Write-Host "/" -ForegroundColor $env:HELLO_ColorLow -n
-    Write-Host $HostUsername -ForegroundColor $env:HELLO_ColorHigh
+    Write-Host (Build-HelloVariableTemplate -Template "{hu}") -ForegroundColor $env:HELLO_ColorHigh
 
     Write-LinePrefix -Line 5 -Icon "+" -IconColor Magenta
     Write-Host "$($Uptime.HoursRounded) $($Uptime.HourSuffix)" -ForegroundColor $env:HELLO_ColorHigh -n
@@ -455,7 +500,9 @@ function Update-Hello {
 
 function Restart-Shell {
     Clear-Host
-    Write-Hello
+    if($env:HELLO_MotdVisible -eq $true) {
+        Write-Hello
+    }
 }
 
 #endregion
@@ -467,14 +514,12 @@ if ($MyInvocation.MyCommand.Name.ToLower() -eq "install-hello.ps1") {
     Exit 0
 }
 
-if ($Host.Name.ToString() -eq "ConsoleHost") {
-    Restart-Shell
+Restart-Shell
 
-    if ((Assert-HelloUseBuiltInPrompt)) {
-        function prompt {
-            Write-HelloPrompt
-            return ' '
-        }
+if ((Assert-HelloUseBuiltInPrompt)) {
+    function prompt {
+        Write-HelloPrompt
+        return ' '
     }
 }
 
